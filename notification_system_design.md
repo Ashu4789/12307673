@@ -265,3 +265,19 @@ The query is logically accurate but it is not optimized. SELECT * is bad practic
 
 Placement Notification Query
 SELECT DISTINCT studentID FROM notifications WHERE notificationType = 'Placement' AND createdAt >= NOW() - INTERVAL '7 days';
+
+# Stage 4
+
+Solution:
+Use an In-Memory Cache (e.g., Redis) and transition from client fetching on page load to Server-Push (WebSockets).
+
+Performance Improvement
+Data will be read from the fast Redis cache instead of the SQL database. WebSockets maintain a single open connection to push updates instantly, eliminating redundancy in database queries during page navigation.
+
+Tradeoffs
+1. Caching:
+   - Pros: Drastically reduces DB load and latency.
+   - Cons: Adds infrastructure complexity and requires cache invalidation to prevent stale data.
+2. WebSockets:
+   - Pros: Eliminates repetitive HTTP requests and provides real-time updates.
+   - Cons: Persistent connections consume server memory and make scaling/load balancing hectic.
