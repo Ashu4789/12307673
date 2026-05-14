@@ -252,3 +252,16 @@ UPDATE notifications SET is_read = true WHERE user_id = "user_id" AND is_read = 
 
 4. Delete a Notification
 DELETE FROM notifications WHERE id = "notification_id" AND user_id = "user_id";
+
+# Stage 3
+
+The query is logically accurate but it is not optimized. SELECT * is bad practice, and ASC shows oldest notifications first instead of newest.
+
+-> Without indexes on studentID and isRead, the database performs a full table scan on 5,000,000 rows.
+
+->Change: Add a composite index on (studentID, isRead, createdAt) and select only required columns.
+->Cost: Time complexity reduces to O(log N), drastically improves speed.
+-> Indexing every column -> It wastes storage space and severely slows down write operations (INSERT, UPDATE, DELETE).
+
+Placement Notification Query
+SELECT DISTINCT studentID FROM notifications WHERE notificationType = 'Placement' AND createdAt >= NOW() - INTERVAL '7 days';
