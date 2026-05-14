@@ -281,3 +281,49 @@ Tradeoffs
 2. WebSockets:
    - Pros: Eliminates repetitive HTTP requests and provides real-time updates.
    - Cons: Persistent connections consume server memory and make scaling/load balancing hectic.
+
+---
+
+# Stage 5
+
+Shortcomings Observed:
+1. Looping one by one over 50,000 students is slow.
+2. Error in send_email halts the loop, and the remaining students remain unnotified and in inconsistent state.
+3. Database writes, email dispatch, and push notifications are tied together in the same thread.
+
+Dealing with the 200 Failed Emails:
+Currently, it's a mess to recover because we don't know exactly where it failed without manual checks. The rest of the students missed their notifications entirely.
+
+Redesign for Reliability & Speed:
+We should shift to an event-driven, asynchronous architecture using a Message Queue. The notify_all function should just drop events into the queue and return instantly. Independent services can then process these events concurrently, to ensure high speed and reliability.
+We can use Dead Letter Queues for automatic retries if an email fails.
+
+Should DB Save and Email Happen Together?
+No, Database inserts are very fast, while sending emails via external APIs is slow and prone to latency. Running them synchronously means the fast database is blocked and in waiting state for the slow email to finish sending. They should be handled independently by asynchronous background services.
+
+New Pseudocode:
+
+
+#Main API Handler
+function notify_all(student_ids: array, message: string):
+    # Quickly publish events to a message broker and return response
+    for student_id in student_ids:
+        publish_to_queue("notification_events", { student_id, message })
+    
+    return "Notifications are being processed."
+
+#Database Writer (Consumes from Queue)
+function database_writer(event):
+    save_to_db(event.student_id, event.message)
+
+#Email Sender (Consumes from Queue)
+function email_Sender(event):
+    try:
+        send_email(event.student_id, event.message)
+    except EmailFailureError:
+        send_to_dead_letter_queue(event) # Automatically retries later
+
+#Push Notification Sender (Consumes from Queue)
+function push_notification_Sender(event):
+    push_to_app(event.student_id, event.message)
+
