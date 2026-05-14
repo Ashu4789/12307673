@@ -327,3 +327,26 @@ function email_Sender(event):
 function push_notification_Sender(event):
     push_to_app(event.student_id, event.message)
 
+---
+
+# Stage 6
+
+Approach for Priority Inbox:
+To efficiently maintain the top 10 most important notifications from a continuous stream without querying a database, I implemented a ->Min-Heap (Priority Queue) data structure in JavaScript.
+
+Priority Logic:
+1. Weight: We assigned fixed integer weights based on the notification type: Placement = 3, Result = 2, Event = 1.
+2. Recency: When weights are identical, the more recent notification (parsed from the Timestamp) is prioritized.
+
+Efficiency (Stream Processing):
+A Min-Heap of fixed size N (where N=10) is extremely efficient for processing an infinite stream of incoming notifications. 
+* As new notifications arrive, they are pushed into the heap.
+* If the heap reaches size 10, we compare the new notification against the minimum element in the heap (which is always at the root).
+* If the new notification has a higher priority, we replace the root and heapify down.
+* Time complexity to process each incoming notification is O(log N) (which is effectively O(1) since N=10 is a tiny constant). Memory usage is extremely low as Space complexity remains O(N).
+
+Implementation Details:
+* The full solution is implemented in priority_inbox.js.
+* It simulates the provided API by reading from a mocked notifications.json payload.
+* The script processes the notifications, sorts them using the heap, and outputs the top 10 priority inbox to the console.
+* The console output has been captured and saved as screenshot.png in the repository.
